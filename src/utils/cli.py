@@ -5,7 +5,8 @@ import re
 import logging
 from utils import download_pdf, is_pdf, is_valid_url, USER_DATA_DIR_PDF_DOWNLOADS
 import os
-import PyPDF2
+from langchain.document_loaders import PyPDFLoader
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -13,11 +14,17 @@ def extract_text_from_pdf(file_path):
     logging.info(f"Extracting text from {file_path}")
     return "text"
 
-def search_pdf(file_path, query):
-    logging.info(f"Searching {file_path} for {query}")
-    text = extract_text_from_pdf(file_path)
-    matches = re.findall(query, text, flags=re.IGNORECASE)
-    return matches
+def dump_text_from_pdf(pdf_path):
+    logging.info(f"Dumping text from {pdf_path}")
+    output_path = os.path.join(USER_DATA_DIR_PDF_DOWNLOADS, pdf_path)
+    loader = PyPDFLoader(output_path)
+    pages = loader.load_and_split()
+    # loop over all pages and print the text
+    for page in pages:
+        logging.info(page.page_content)
+    # number of pages
+    logging.info(f"Number of pages: {len(pages)}")
+    return pages
 
 def main():
     parser = argparse.ArgumentParser(description="Search or ask questions against a PDF and insert a PDF via a link.")
@@ -27,10 +34,9 @@ def main():
     download_parser = subparsers.add_parser("download", help="Download a PDF from a given URL")
     download_parser.add_argument("url", type=str, help="URL of the PDF file")
 
-    # Search command
-    search_parser = subparsers.add_parser("search", help="Search a PDF for a given query")
-    search_parser.add_argument("pdf_path", type=str, help="Path to the PDF file")
-    search_parser.add_argument("query", type=str, help="Search query")
+    # Dump command
+    dump_parser = subparsers.add_parser("dump", help="Dump a PDF to text")
+    dump_parser.add_argument("pdf_path", type=str, help="Path to the PDF file")
 
     args = parser.parse_args()
 
@@ -61,15 +67,10 @@ def main():
         # Print success message
         logging.info(f"PDF downloaded from {args.url} and saved to {output_path}")
 
-    elif args.command == "search":
-        matches = search_pdf(args.pdf_path, args.query)
-        logging.info(f"Found {len(matches)} matches for the query '{args.query}':")
-        for idx, match in enumerate(matches, 1):
-            logging.info(f"{idx}. {match}")
+    elif args.command == "dump":
+        dump_text_from_pdf(args.pdf_path)
     else:
         parser.print_help()
 
 if __name__ == "__main__":
     main()
-
-
