@@ -1,0 +1,18 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "ChatPDF",
+  "name_for_model": "chatpdf",
+  "description_for_human": "Plugin for asking questions, analyzing, and parsing through PDF documents by simply providing a PDF URL.",
+  "description_for_model": "Plugin for asking questions, analyzing, and parsing through PDF documents by simply providing a temporary PDF URL.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "PLUGIN_HOSTNAME/openapi.yaml",
+    "is_user_authenticated": false
+  },
+  "logo_url": "PLUGIN_HOSTNAME/logo.png",
+  "contact_email": "support@example.com",
+  "legal_info_url": "https://example.com/legal"
+}
