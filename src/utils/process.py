@@ -40,23 +40,67 @@ chroma_settings = Settings(
     chroma_db_impl="duckdb+parquet",
 )
 
-persist_directory = 'user_pdf_embeddings'
+# persist_directory = 'user_pdf_embeddings'
 
-embedding = OpenAIEmbeddings()
+# db = Chroma(collection_name="chatpdf_collection", client_settings=chroma_settings, persist_directory=persist_directory)
 
-db = Chroma(collection_name="chatpdf_collection", client_settings=chroma_settings, persist_directory=persist_directory)
+# Set up ChromaDB client
+# client = chromadb.Client(Settings(
+#     anonymized_telemetry=False,
+#     chroma_api_impl="rest",
+#     chroma_server_host=os.getenv("CHROMA_SERVER_HOST", "localhost"),
+#     chroma_server_ssl_enabled=True,
+#     chroma_server_http_port=443,
+#     chroma_db_impl="duckdb+parquet",
+# ))
+client = chromadb.Client(Settings(
+    anonymized_telemetry=False,
+))
 
-# docsearch = vectorstore.from_documents(webpage, embeddings, collection_name="webpage")
+
+# Set up embedding function
+openai_ef = embedding_functions.OpenAIEmbeddingFunction(
+    api_key=OPENAI_API_KEY,
+    model_name="text-embedding-ada-002"
+)
+
+# Create or get the place collection
+chatpdf_collection = client.get_or_create_collection(name="chatpdf_collection", embedding_function=openai_ef)
 
 def load_file(pdf_path):
+    logging.info(f"Loading file {pdf_path}")
     output_path = os.path.join(USER_DATA_DIR_PDF_DOWNLOADS, pdf_path)
     loader = PyPDFLoader(output_path)
     pages = loader.load()
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
     chunks = text_splitter.split_documents(pages)
-    vectordb = db.from_documents(documents=chunks, embedding=embedding)
-    vectordb.persist()
+
+    texts = [doc.page_content for doc in chunks]
+    metadatas = [doc.metadata for doc in chunks]
+
+    # Extract the PDF name without the extension
+    pdf_name = os.path.splitext(os.path.basename(pdf_path))[0]
+
+    # Generate an array of IDs with the same length as texts, including the PDF name
+    ids = [f"{pdf_name}_{i}" for i in range(len(texts))]
+
+    # Add the ID to each metadata object
+    for i, metadata in enumerate(metadatas):
+        metadata["id"] = ids[i]
+
+    chatpdf_collection.add(documents=texts, metadatas=metadatas, ids=ids)
+
+    logging.info(f"File {pdf_path} loaded successfully")
 
 def query_file(query):
-    return db.similarity_search_with_score(query)
+    logging.info(f"Querying file with query: {query}")
+    results = chatpdf_collection.query(query_texts=[query], n_results=5)
+    logging.info(f"Query successful")
+    return results
 
+if __name__ == "__main__":
+    # Run a test query against Note11B.pdf (already downloaded)  
+    load_file("Note11B.pdf")
+    query = "node voltage analysis"
+    results = query_file(query)
+    logging.info(f"Results: {results}")
