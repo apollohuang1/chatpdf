@@ -11,7 +11,7 @@ import pandas as pd
 from pprint import pprint
 import time
 from dotenv import load_dotenv
-from utils import download_pdf, is_pdf, is_valid_url, USER_DATA_DIR_PDF_DOWNLOADS
+from .utils import USER_DATA_DIR_PDF_DOWNLOADS
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import Chroma
@@ -84,17 +84,25 @@ def load_file(pdf_path):
     # Generate an array of IDs with the same length as texts, including the PDF name
     ids = [f"{pdf_name}_{i}" for i in range(len(texts))]
 
-    # Add the ID to each metadata object
+    # Add the ID to each metadata object and PDF_name
     for i, metadata in enumerate(metadatas):
+        metadata["PDF_name"] = pdf_name
         metadata["id"] = ids[i]
+
+    logging.info(f"[load_file] texts: {texts}")
+    logging.info(f"[load_file] metadatas: {metadatas}")
+    logging.info(f"[load_file] ids: {ids}")
 
     chatpdf_collection.add(documents=texts, metadatas=metadatas, ids=ids)
 
     logging.info(f"File {pdf_path} loaded successfully")
 
-def query_file(query):
-    logging.info(f"Querying file with query: {query}")
-    results = chatpdf_collection.query(query_texts=[query], n_results=5)
+def query_file(pdf_name, query):
+    # Strip .pdf extension from pdf_name
+    pdf_name = os.path.splitext(pdf_name)[0]
+    logging.info(f"[query_file] Querying file with query: {query}")
+    logging.info(f"[query_file] pdf_name: {pdf_name}")
+    results = chatpdf_collection.query(query_texts=[query], where={"PDF_name":pdf_name}, n_results=5)
     logging.info(f"Query successful")
     return results
 

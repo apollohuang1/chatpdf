@@ -1,0 +1,75 @@
+openapi: 3.0.1
+info:
+  title: ChatWithPDF Plugin
+  description: A plugin that allows users to load and query PDF documents using ChatGPT. Users must provide a temporary PDF URL for processing. Once the PDF is loaded, users can query, analyze, or ask questions based on the PDF name.
+  version: "v1"
+servers:
+  - url: PLUGIN_HOSTNAME
+paths:
+  /pdf/load:
+    post:
+      operationId: loadPdf
+      summary: Load a PDF document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/loadPdfRequest"
+      responses:
+        "200":
+          description: OK
+  /pdf/{pdf_name}/query:
+    post:
+      operationId: queryPdf
+      summary: Query a loaded PDF document
+      parameters:
+        - in: path
+          name: pdf_name
+          schema:
+            type: string
+          required: true
+          description: The name of the PDF document.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/queryPdfRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/queryPdfResponse"
+
+components:
+  schemas:
+    loadPdfRequest:
+      type: object
+      required:
+        - pdf_url
+      properties:
+        pdf_url:
+          type: string
+          format: uri
+          description: The temporary URL of the PDF document to load.
+          required: true
+    queryPdfRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: The query or question to ask based on the PDF document.
+          required: true
+    queryPdfResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: string
+          description: The list of text chunks from the PDF document that are relevant to the user's query.

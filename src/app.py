@@ -1,61 +1,49 @@
 import json
 import os
 import logging
-import asyncio
 from dotenv import load_dotenv
-from quart import Quart, request, send_file, Response
+from quart import Quart, request, Response, send_file
 import quart_cors
-from utils.process import query_place_collection
-from hypercorn.config import Config
-from hypercorn.asyncio import serve
-
+from utils.utils import download_pdf
+from utils.process import load_file, query_file
 
 load_dotenv()
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = quart_cors.cors(Quart(__name__))
 
-@app.post("/recommendations")
-async def recommendations():
+@app.post("/pdf/load")
+async def load_pdf():
+    try:
+        data = await request.get_json(force=True)
+        logging.info(f"[load_pdf] Data: {data}")
+        pdf_url = data["pdf_url"]
+        logging.info(f"[load_pdf] Loading PDF from URL: {pdf_url}")
+        pdf_name = download_pdf(pdf_url)
+        load_file(pdf_name)
+        logging.info(f"[load_pdf] PDF loaded from URL: {pdf_url}")
+        return Response(response=json.dumps({"status": "success"}), status=200)
+
+    except Exception as e:
+        logging.error(f"[load_pdf] Error occurred: {e}")
+        return Response(response=json.dumps({"error": "An error occurred."}), status=500)
+
+@app.post("/pdf/<pdf_name>/query")
+async def query_pdf(pdf_name):
     try:
         data = await request.get_json(force=True)
         query = data["query"]
-        num_results = data.get("num_results", 3)
-
-        # Validate and sanitize input
-
-        place_list = query_place_collection(query, num_results)
-
-        ## Log recommendations
-        logging.info(f"Recommendations: {place_list}\n")
-
-        formatted_recommendations = []
-        for place in place_list:
-            formatted_str = (f"{place['name']} at {place['address']} | "
-                            f"About Summary: {place['editorial_summary']} | "
-                            f"Types: {place['types']} | "
-                            f"Rating: {place['rating']} | "
-                            f"Total User Ratings: {place['user_ratings_total']} | "
-                            f"Price Level: {place['price_level']} | "
-                            f"Opening Hours: {place['opening_hours']} | "
-                            f"Reviews: {place['reviews']} | "
-                            f"Dine-in: {place['dine_in']} | "
-                            f"Delivery: {place['delivery']} | "
-                            f"Takeout: {place['takeout']}")
-            formatted_recommendations.append(formatted_str)
-
-        logging.info("Formatted Recommendations: %s", formatted_recommendations)
-
-
-        return Response(response=json.dumps(formatted_recommendations), status=200)
+        logging.info(f"[query_pdf] Querying PDF {pdf_name} with query: {query}")
+        results = query_file(pdf_name, query)
+        logging.info(f"[query_pdf] Query results for PDF {pdf_name}: {results}")
+        return Response(response=json.dumps({"results": results}), status=200)
 
     except Exception as e:
-        logging.error(f"Error occurred: {e}")
+        logging.error(f"[query_pdf] Error occurred: {e}")
         return Response(response=json.dumps({"error": "An error occurred."}), status=500)
 
 @app.get("/logo.png")
@@ -87,8 +75,13 @@ async def legal():
 
 @app.get("/health")
 async def health_check():
+    logging.info("Health check endpoint accessed")
     return Response(response="🫡", status=200, mimetype="text/plain")
 
 @app.get("/")
 async def homepage():
-    return "chatmaps plugin server is running!"
+    return "ChatPDF server is running!"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=3000)
+

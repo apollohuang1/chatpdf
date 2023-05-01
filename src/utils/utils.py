@@ -72,3 +72,6 @@ def download_pdf(pdf_url):
 
     # Print success message
     logging.info(f"PDF downloaded from {pdf_url} and saved to {output_path}")
+
+    # Return PDF name
+    return pdf_name
