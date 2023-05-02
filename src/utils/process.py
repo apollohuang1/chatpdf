@@ -32,31 +32,14 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
 
 # Set up ChromaDB client
-chroma_settings = Settings(
+client = chromadb.Client(Settings(
+    anonymized_telemetry=False,
     chroma_api_impl="rest",
     chroma_server_host=os.getenv("CHROMA_SERVER_HOST", "localhost"),
     chroma_server_ssl_enabled=True,
     chroma_server_http_port=443,
     chroma_db_impl="duckdb+parquet",
-)
-
-# persist_directory = 'user_pdf_embeddings'
-
-# db = Chroma(collection_name="chatpdf_collection", client_settings=chroma_settings, persist_directory=persist_directory)
-
-# Set up ChromaDB client
-# client = chromadb.Client(Settings(
-#     anonymized_telemetry=False,
-#     chroma_api_impl="rest",
-#     chroma_server_host=os.getenv("CHROMA_SERVER_HOST", "localhost"),
-#     chroma_server_ssl_enabled=True,
-#     chroma_server_http_port=443,
-#     chroma_db_impl="duckdb+parquet",
-# ))
-client = chromadb.Client(Settings(
-    anonymized_telemetry=False,
 ))
-
 
 # Set up embedding function
 openai_ef = embedding_functions.OpenAIEmbeddingFunction(
