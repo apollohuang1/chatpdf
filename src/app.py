@@ -2,7 +2,7 @@ import json
 import os
 import logging
 from dotenv import load_dotenv
-from quart import Quart, request, Response, send_file
+from quart import Quart, request, Response, send_file, render_template, render_template_string
 import quart_cors
 from utils.utils import download_pdf
 from utils.process import load_file, query_file
@@ -80,7 +80,9 @@ async def health_check():
 
 @app.get("/")
 async def homepage():
-    return "ChatPDF server is running!"
+    with open(os.path.join(current_dir, '..', 'index.html'), 'r') as f:
+        content = f.read()
+    return await render_template_string(content)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=3000)
