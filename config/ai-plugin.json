@@ -9,11 +9,11 @@
   },
   "api": {
     "type": "openapi",
-    "url": "PLUGIN_HOSTNAME/openapi.yaml",
+    "url": "https://chatwithpdf.sdan.io/openapi.yaml",
     "is_user_authenticated": false
   },
-  "logo_url": "PLUGIN_HOSTNAME/logo.png",
+  "logo_url": "https://chatwithpdf.sdan.io/logo.png",
   "contact_email": "support@chatwithpdf@sdan.io",
-  "legal_info_url": "PLUGIN_HOSTNAME/legal"
+  "legal_info_url": "https://chatwithpdf.sdan.io/legal"
 }
 
