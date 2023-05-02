@@ -3,7 +3,7 @@
   "name_for_human": "ChatWithPDF",
   "name_for_model": "chatwithpdf",
   "description_for_human": "Plugin for asking questions, analyzing, and parsing through PDF documents by simply providing a PDF URL.",
-  "description_for_model": "Plugin for asking questions, analyzing, and parsing through PDF documents by simply providing a temporary PDF URL.",
+  "description_for_model": "A plugin that allows users to load and query PDF documents using ChatGPT. Users must first provide a temporary PDF URL for processing. Once the PDF is loaded, users can query, analyze, or ask questions from that PDF name without needing to specify everytime.",
   "auth": {
     "type": "none"
   },

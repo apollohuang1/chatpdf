@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: ChatWithPDF Plugin
-  description: A plugin that allows users to load and query PDF documents using ChatGPT. Users must provide a temporary PDF URL for processing. Once the PDF is loaded, users can query, analyze, or ask questions based on the PDF name.
+  description: A plugin that allows users to load and query PDF documents using ChatGPT. Users must first provide a temporary PDF URL for processing. Once the PDF is loaded, users can query, analyze, or ask questions from that PDF name without needing to specify everytime.
   version: "v1"
 servers:
   - url: https://chatwithpdf.sdan.io
