@@ -16,7 +16,7 @@ from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import Chroma
 from langchain.document_loaders import TextLoader, PyPDFLoader
-
+from utils.utils import is_valid_url
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -50,26 +50,47 @@ openai_ef = embedding_functions.OpenAIEmbeddingFunction(
 # Create or get the place collection
 chatpdf_collection = client.get_or_create_collection(name="chatpdf_collection", embedding_function=openai_ef)
 
-def load_file(pdf_path):
-    logging.info(f"Loading file {pdf_path}")
-    output_path = os.path.join(USER_DATA_DIR_PDF_DOWNLOADS, pdf_path)
+def check_pdf_exists(pdf_url):
+    
+    # Validate URL
+    if not is_valid_url(pdf_url):
+        logging.error(f"Invalid URL: {pdf_url}")
+        return
+    logging.info(f"[check_pdf_exists] Checking if PDF {pdf_url} exists")
+
+    pdf_name = os.path.basename(pdf_url)
+    
+    results = chatpdf_collection.get(where={"PDF_name":pdf_name})
+    logging.info(f"[check_pdf_exists] Results: {results}")
+    ids = results['ids']
+    logging.info(f"[check_pdf_exists] IDs length: {len(ids)}") 
+    if len(ids) > 0:
+        logging.info(f"PDF {pdf_name} exists, skipping download and loading")
+        return True
+    else:
+        logging.info(f"PDF {pdf_name} does not exist")
+        return False
+
+def load_file(pdf_name):
+    logging.info(f"Loading file {pdf_name}")
+    output_path = os.path.join(USER_DATA_DIR_PDF_DOWNLOADS, pdf_name)
     loader = PyPDFLoader(output_path)
     pages = loader.load()
-    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+    text_splitter = CharacterTextSplitter(chunk_size=800, chunk_overlap=0)
     chunks = text_splitter.split_documents(pages)
 
     texts = [doc.page_content for doc in chunks]
     metadatas = [doc.metadata for doc in chunks]
 
     # Extract the PDF name without the extension
-    pdf_name = os.path.splitext(os.path.basename(pdf_path))[0]
+    pdf_name_clean_extension = os.path.splitext(os.path.basename(pdf_name))[0]
 
     # Generate an array of IDs with the same length as texts, including the PDF name
-    ids = [f"{pdf_name}_{i}" for i in range(len(texts))]
+    ids = [f"{pdf_name_clean_extension}_{i}" for i in range(len(texts))]
 
     # Add the ID to each metadata object and PDF_name
     for i, metadata in enumerate(metadatas):
-        metadata["PDF_name"] = pdf_name
+        metadata["PDF_name"] = pdf_name # not clean extension
         metadata["id"] = ids[i]
 
     logging.info(f"[load_file] texts: {texts}")
@@ -78,11 +99,9 @@ def load_file(pdf_path):
 
     chatpdf_collection.add(documents=texts, metadatas=metadatas, ids=ids)
 
-    logging.info(f"File {pdf_path} loaded successfully")
+    logging.info(f"File {pdf_name} loaded successfully")
 
 def query_file(pdf_name, query):
-    # Strip .pdf extension from pdf_name
-    pdf_name = os.path.splitext(pdf_name)[0]
     logging.info(f"[query_file] Querying file with query: {query}")
     logging.info(f"[query_file] pdf_name: {pdf_name}")
     results = chatpdf_collection.query(query_texts=[query], where={"PDF_name":pdf_name}, n_results=5)

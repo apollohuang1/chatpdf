@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from quart import Quart, request, Response, send_file, render_template, render_template_string
 import quart_cors
 from utils.utils import download_pdf
-from utils.process import load_file, query_file
+from utils.process import load_file, query_file, check_pdf_exists
 
 load_dotenv()
 
@@ -22,15 +22,21 @@ async def load_pdf():
         data = await request.get_json(force=True)
         logging.info(f"[load_pdf] Data: {data}")
         pdf_url = data["pdf_url"]
+
+        if check_pdf_exists(pdf_url):
+            logging.info(f"[load_pdf] PDF {pdf_url} already exists, skipping download and loading")
+            return Response(response=json.dumps({"status": "success"}), status=200)
+
         logging.info(f"[load_pdf] Loading PDF from URL: {pdf_url}")
         pdf_name = download_pdf(pdf_url)
         load_file(pdf_name)
         logging.info(f"[load_pdf] PDF loaded from URL: {pdf_url}")
-        return Response(response=json.dumps({"status": "success"}), status=200)
 
+        return Response(response=json.dumps({"status": "success"}), status=200)
     except Exception as e:
         logging.error(f"[load_pdf] Error occurred: {e}")
         return Response(response=json.dumps({"error": "An error occurred."}), status=500)
+
 
 @app.post("/pdf/<pdf_name>/query")
 async def query_pdf(pdf_name):
@@ -40,7 +46,8 @@ async def query_pdf(pdf_name):
         logging.info(f"[query_pdf] Querying PDF {pdf_name} with query: {query}")
         results = query_file(pdf_name, query)
         logging.info(f"[query_pdf] Query results for PDF {pdf_name}: {results}")
-        return Response(response=json.dumps({"results": results}), status=200)
+        logging.info(f"[query_pdf] Document results for PDF {pdf_name}: {results['documents'][0]}")
+        return Response(response=json.dumps({"results": results['documents'][0]}), status=200)
 
     except Exception as e:
         logging.error(f"[query_pdf] Error occurred: {e}")

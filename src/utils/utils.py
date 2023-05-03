@@ -7,7 +7,6 @@ import requests
 from requests.exceptions import HTTPError
 import logging
 
-
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
@@ -46,11 +45,8 @@ def fetch_pdf(pdf_url):
         logging.error(f"An error occurred while downloading the PDF from {pdf_url}")
         return None
 
+
 def download_pdf(pdf_url):
-     # Validate URL
-    if not is_valid_url(pdf_url):
-        logging.error(f"Invalid URL: {pdf_url}")
-        return
     
     # Download PDF        
     pdf_data = fetch_pdf(pdf_url)
