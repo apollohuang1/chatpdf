@@ -1,4 +1,5 @@
 # chatwithpdf
+
 ChatWithPDF is a ChatGPT plugin that allows users to do Q/A with any PDF online.
 
 <img width="864" alt="Screenshot 2023-05-01 at 6 22 26 PM" src="https://user-images.githubusercontent.com/22898443/235559587-953f9a4a-4ce1-4456-9112-3f00f7936df0.png">
