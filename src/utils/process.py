@@ -43,8 +43,6 @@ client = chromadb.Client(Settings(
     chroma_server_host=os.getenv("CHROMA_SERVER_HOST", "localhost"),
     chroma_server_ssl_enabled=True,
     chroma_server_http_port=443,
-    chroma_db_impl="duckdb+parquet",
-    persist_directory=os.getenv("CHROMA_PERSIST_DIRECTORY", "/tmp/chroma"),
 ))
 
 # Set up embedding function
