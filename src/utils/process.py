@@ -41,7 +41,7 @@ client = chromadb.Client(Settings(
     anonymized_telemetry=False,
     chroma_api_impl="rest",
     chroma_server_host=os.getenv("CHROMA_SERVER_HOST", "localhost"),
-    chroma_server_ssl_enabled=True,
+    chroma_server_ssl_enabled=False,
     chroma_server_http_port=443,
 ))
 
