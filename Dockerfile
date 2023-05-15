@@ -1,6 +1,8 @@
 # Use an official Python runtime as a parent image
 FROM python:3.8-buster
 
+RUN pip install chromadb==0.3.21
+
 # Set the working directory in the container to /app/src
 WORKDIR /app/src
 
