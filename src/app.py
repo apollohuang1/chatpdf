@@ -58,7 +58,7 @@ def query_pdf(pdf_name):
 @app.route("/logo.png", methods=['GET'])
 def plugin_logo():
     filename = os.path.join(current_dir, '..', 'assets', 'logo.png')
-    send_file(filename, mimetype='image/png')
+    return send_file(filename, mimetype='image/png')
 
 @app.route("/.well-known/ai-plugin.json", methods=['GET'])
 def plugin_manifest():
