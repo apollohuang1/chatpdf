@@ -104,9 +104,7 @@ def load_file(pdf_name):
     logging.info(f"[load_file] ids: {ids}")
 
     chatpdf_collection.add(documents=texts, metadatas=metadatas, ids=ids)
-    posthog.capture('file_loaded', distinct_id=ids[0], properties={'file_name': pdf_name})
-
-
+    print(ids[0])
 
     logging.info(f"File {pdf_name} loaded successfully")
 
