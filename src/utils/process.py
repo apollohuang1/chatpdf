@@ -63,7 +63,7 @@ def check_pdf_exists(pdf_url):
     logging.info(f"[check_pdf_exists] Checking if PDF {pdf_url} exists")
 
     pdf_name = os.path.basename(pdf_url)
-    
+
     results = chatpdf_collection.get(where={"PDF_name":pdf_name})
     logging.info(f"[check_pdf_exists] Results: {results}")
     ids = results['ids']
