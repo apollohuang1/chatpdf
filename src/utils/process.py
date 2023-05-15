@@ -17,6 +17,7 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import Chroma
 from langchain.document_loaders import TextLoader, PyPDFLoader
 from utils.utils import is_valid_url
+from posthog import Posthog            
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -27,9 +28,13 @@ load_dotenv()
 # API Keys
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+POSTHOG_API_KEY = os.getenv("POSTHOG_API_KEY")
 
 # Set up OpenAI API key
 openai.api_key = OPENAI_API_KEY
+
+# Set up PostHog
+posthog = Posthog(project_api_key=POSTHOG_API_KEY, host='https://app.posthog.com')
 
 # Set up ChromaDB client
 client = chromadb.Client(Settings(
@@ -99,6 +104,9 @@ def load_file(pdf_name):
     logging.info(f"[load_file] ids: {ids}")
 
     chatpdf_collection.add(documents=texts, metadatas=metadatas, ids=ids)
+    posthog.capture('file_loaded', distinct_id=ids[0], properties={'file_name': pdf_name})
+
+
 
     logging.info(f"File {pdf_name} loaded successfully")
 
