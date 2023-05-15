@@ -11,3 +11,4 @@ Requests==2.29.0
 validators==0.20.0
 langchain==0.0.154
 urllib3==1.26.5
+PyPDF2==2.10.4
