@@ -41,22 +41,18 @@ client = chromadb.Client(Settings(
     anonymized_telemetry=False,
     # chroma_api_impl="rest",
     # chroma_server_host=os.getenv("CHROMA_SERVER_HOST", "localhost"),
-    # chroma_server_ssl_enabled=True,
-    # chroma_server_http_port=443,
+    # chroma_server_ssl_enabled=False,
+    # chroma_server_http_port=8000,
 ))
 
-# # Set up embedding function
-# openai_ef = embedding_functions.OpenAIEmbeddingFunction(
-#     api_key=OPENAI_API_KEY,
-#     model_name="text-embedding-ada-002"
-# )
-
-ef = embedding_functions.InstructorEmbeddingFunction() 
-
-
+# Set up embedding function
+openai_ef = embedding_functions.OpenAIEmbeddingFunction(
+    api_key=OPENAI_API_KEY,
+    model_name="text-embedding-ada-002"
+)
 
 # Create or get the place collection
-chatpdf_collection = client.get_or_create_collection(name="chatpdf_collection", embedding_function=ef)
+chatpdf_collection = client.get_or_create_collection(name="chatpdf_collection", embedding_function=openai_ef)
 
 def check_pdf_exists(pdf_url):
     
@@ -84,17 +80,17 @@ def load_file(pdf_name):
     output_path = os.path.join(USER_DATA_DIR_PDF_DOWNLOADS, pdf_name)
     loader = PyPDFLoader(output_path)
     pages = loader.load()
-    text_splitter = CharacterTextSplitter(chunk_size=800, chunk_overlap=0)
+    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
     chunks = text_splitter.split_documents(pages)
 
     texts = [doc.page_content for doc in chunks]
     metadatas = [doc.metadata for doc in chunks]
 
     # Extract the PDF name without the extension
-    # pdf_name_clean_extension = os.path.splitext(os.path.basename(pdf_name))[0]
+    pdf_name_clean_extension = os.path.splitext(os.path.basename(pdf_name))[0]
 
     # Generate an array of IDs with the same length as texts, including the PDF name
-    ids = [f"{pdf_name}_{i}" for i in range(len(texts))]
+    ids = [f"{pdf_name_clean_extension}_{i}" for i in range(len(texts))]
 
     # Add the ID to each metadata object and PDF_name
     for i, metadata in enumerate(metadatas):

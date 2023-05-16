@@ -11,7 +11,7 @@ from requests.exceptions import RequestException
 import gdown
 import re
 import uuid
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, unquote, parse_qs
 
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
@@ -81,8 +81,12 @@ def fetch_pdf(pdf_url):
             if 'application/pdf' not in content_type and 'application/octet-stream' not in content_type:
                 logging.error(f"URL does not point to a PDF. Content-Type was: {content_type}")
                 return None
-
+            
             logging.info(f"[fetch_pdf] PDF downloaded from {pdf_url}")
+
+            # Hardcoded PDF name
+            if 'openreview.net' in pdf_url:
+                return io.BytesIO(response.content), parse_qs(urlparse(pdf_url).query)['id'][0]
 
             return io.BytesIO(response.content), unquote(urlparse(pdf_url).path.split("/")[-1])
         
