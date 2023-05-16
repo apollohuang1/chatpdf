@@ -8,7 +8,10 @@ from requests.exceptions import HTTPError
 import logging
 import urllib.parse
 from requests.exceptions import RequestException
-
+import gdown
+import re
+import uuid
+from urllib.parse import urlparse, unquote
 
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
@@ -57,20 +60,32 @@ def is_pdf(pdf_data):
         logging.error("Unexpected error while checking PDF: %s", str(e))
         return False
 
-    
+
 def fetch_pdf(pdf_url):
     try:
-        response = requests.get(pdf_url, stream=True, timeout=10)
-        response.raise_for_status()
+        if 'drive.google.com' in pdf_url:
+            # If the URL is a Google Drive URL, use gdown
+            # generate a random temp id
+            temp_id = str(uuid.uuid4())
+            output_path = os.path.join(USER_DATA_DIR_PDF_DOWNLOADS, temp_id)
+            logging.info(f"[fetch_pdf] Google Drive downloaded from {pdf_url} into {output_path}")
+            gdown.download(pdf_url, output_path, quiet=False, fuzzy=True)
+            with open(output_path, "rb") as f:
+                return io.BytesIO(f.read()), unquote(urlparse(pdf_url).path.split("/")[-2])
+        else:
+            # If not, use requests as before
+            response = requests.get(pdf_url, stream=True, timeout=10)
+            response.raise_for_status()
 
-        content_type = response.headers.get('Content-Type', '')
-        if 'application/pdf' not in content_type and 'application/octet-stream' not in content_type:
-            logging.error(f"URL does not point to a PDF. Content-Type was: {content_type}")
-            return None
+            content_type = response.headers.get('Content-Type', '')
+            if 'application/pdf' not in content_type and 'application/octet-stream' not in content_type:
+                logging.error(f"URL does not point to a PDF. Content-Type was: {content_type}")
+                return None
+
+            logging.info(f"[fetch_pdf] PDF downloaded from {pdf_url}")
+
+            return io.BytesIO(response.content), unquote(urlparse(pdf_url).path.split("/")[-1])
         
-        logging.info(f"[fetch_pdf] PDF downloaded from {pdf_url}")
-
-        return io.BytesIO(response.content)
     except RequestException as e:
         logging.error(f"An error occurred while downloading the PDF from {pdf_url}: {str(e)}")
         return None
@@ -79,27 +94,20 @@ def fetch_pdf(pdf_url):
         return None
 
 
-
-
-
 def download_pdf(pdf_url):
+
+    # Save PDF to output path
+    os.makedirs(USER_DATA_DIR_PDF_DOWNLOADS, exist_ok=True)
     
     # Download PDF        
-    pdf_data = fetch_pdf(pdf_url)
+    pdf_data, pdf_name = fetch_pdf(pdf_url)
     if not is_pdf(pdf_data):
         logging.error("The downloaded file is not a valid PDF.")
         return
     if pdf_data is None:
         logging.error(f"The URL {pdf_url} does not point to a valid PDF file.")
         return
-    
-    # Save PDF to output path
-    os.makedirs(USER_DATA_DIR_PDF_DOWNLOADS, exist_ok=True)
-    
-    # Extract PDF name from URL
-    url_path = urllib.parse.urlparse(pdf_url).path
-    pdf_name = os.path.basename(url_path)
-    
+
     output_path = os.path.join(USER_DATA_DIR_PDF_DOWNLOADS, pdf_name)
     
     with open(output_path, "wb") as output_file:
@@ -107,7 +115,7 @@ def download_pdf(pdf_url):
         output_file.write(pdf_data.getvalue())
 
     # Print success message
-    logging.info(f"PDF downloaded from {pdf_url} and saved to {output_path}")
+    logging.info(f"PDF downloaded from {pdf_url} and saved to {output_path} saved as {pdf_name}")
 
     # Return PDF name
     return pdf_name

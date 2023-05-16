@@ -39,20 +39,24 @@ posthog = Posthog(project_api_key=POSTHOG_API_KEY, host='https://app.posthog.com
 # Set up ChromaDB client
 client = chromadb.Client(Settings(
     anonymized_telemetry=False,
-    chroma_api_impl="rest",
-    chroma_server_host=os.getenv("CHROMA_SERVER_HOST", "localhost"),
-    chroma_server_ssl_enabled=True,
-    chroma_server_http_port=443,
+    # chroma_api_impl="rest",
+    # chroma_server_host=os.getenv("CHROMA_SERVER_HOST", "localhost"),
+    # chroma_server_ssl_enabled=True,
+    # chroma_server_http_port=443,
 ))
 
-# Set up embedding function
-openai_ef = embedding_functions.OpenAIEmbeddingFunction(
-    api_key=OPENAI_API_KEY,
-    model_name="text-embedding-ada-002"
-)
+# # Set up embedding function
+# openai_ef = embedding_functions.OpenAIEmbeddingFunction(
+#     api_key=OPENAI_API_KEY,
+#     model_name="text-embedding-ada-002"
+# )
+
+ef = embedding_functions.InstructorEmbeddingFunction() 
+
+
 
 # Create or get the place collection
-chatpdf_collection = client.get_or_create_collection(name="chatpdf_collection", embedding_function=openai_ef)
+chatpdf_collection = client.get_or_create_collection(name="chatpdf_collection", embedding_function=ef)
 
 def check_pdf_exists(pdf_url):
     
@@ -87,10 +91,10 @@ def load_file(pdf_name):
     metadatas = [doc.metadata for doc in chunks]
 
     # Extract the PDF name without the extension
-    pdf_name_clean_extension = os.path.splitext(os.path.basename(pdf_name))[0]
+    # pdf_name_clean_extension = os.path.splitext(os.path.basename(pdf_name))[0]
 
     # Generate an array of IDs with the same length as texts, including the PDF name
-    ids = [f"{pdf_name_clean_extension}_{i}" for i in range(len(texts))]
+    ids = [f"{pdf_name}_{i}" for i in range(len(texts))]
 
     # Add the ID to each metadata object and PDF_name
     for i, metadata in enumerate(metadatas):
@@ -110,6 +114,29 @@ def query_file(pdf_name, query):
     logging.info(f"[query_file] Querying file with query: {query}")
     logging.info(f"[query_file] pdf_name: {pdf_name}")
     results = chatpdf_collection.query(query_texts=[query], where={"PDF_name":pdf_name}, n_results=5)
+    if len(results['ids']) == 0:
+        # check for %20 in pdf_name such as matching:
+        # THE%20ARCADES%20PROJECT.pdf
+        # THE ARCADES PROJECT
+        # THE ARCADES PROJECT.pdf
+
+        # replace %20 with space in pdf_name
+        pdf_name_20 = pdf_name.replace("%20", " ")
+        logging.info(f"[query_file] pdf_name: {pdf_name_20}")
+        results = chatpdf_collection.query(query_texts=[query], where={"PDF_name":pdf_name_20}, n_results=5)
+        if len(results['ids']) == 0: 
+            # remove .pdf from pdf_name
+            pdf_name_clean_extension = os.path.splitext(os.path.basename(pdf_name))[0]
+            logging.info(f"[query_file] pdf_name_clean_extension: {pdf_name_clean_extension}")
+            results = chatpdf_collection.query(query_texts=[query], where={"PDF_name":pdf_name_clean_extension}, n_results=5)
+            if len(results['ids']) == 0:
+                pdf_name_fuzzed = pdf_name.replace(" ", "%20")
+                logging.info(f"[query_file] pdf_name_fuzzed: {pdf_name_fuzzed}")
+                results = chatpdf_collection.query(query_texts=[query], where={"PDF_name":pdf_name_fuzzed}, n_results=5)
+                if len(results['ids']) == 0:                        
+                    logging.info(f"[query_file] No results found")
+                    return None
+                
     logging.info(f"Query successful")
     return results
 
