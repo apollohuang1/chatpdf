@@ -39,10 +39,10 @@ posthog = Posthog(project_api_key=POSTHOG_API_KEY, host='https://app.posthog.com
 # Set up ChromaDB client
 client = chromadb.Client(Settings(
     anonymized_telemetry=False,
-    # chroma_api_impl="rest",
-    # chroma_server_host=os.getenv("CHROMA_SERVER_HOST", "localhost"),
-    # chroma_server_ssl_enabled=False,
-    # chroma_server_http_port=8000,
+    chroma_api_impl="rest",
+    chroma_server_host=os.getenv("CHROMA_SERVER_HOST", "localhost"),
+    chroma_server_ssl_enabled=True,
+    chroma_server_http_port=8443,
 ))
 
 # Set up embedding function
