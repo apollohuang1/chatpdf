@@ -7,21 +7,18 @@ import os
 import logging
 from dotenv import load_dotenv
 import json
-from posthog import Posthog            
 import uuid
-
+from june import analytics
 
 load_dotenv()
 
-POSTHOG_API_KEY = os.getenv("POSTHOG_API_KEY")
+analytics.write_key = "UVORoPXzHFVeAZ8i"
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Set up PostHog
-posthog = Posthog(project_api_key=POSTHOG_API_KEY, host='https://app.posthog.com')
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "default_secret_key")
@@ -46,14 +43,11 @@ class PdfInvalidError(Exception):
 
 @app.route("/pdf/load", methods=['POST'])
 def load_pdf():
-    if 'user_id' not in session:
-        session['user_id'] = str(uuid.uuid4())
-    user_id = session['user_id']
-
     try:
         data = request.get_json(force=True)
         logging.info(f"[load_pdf] Data: {data}")
         pdf_url = data["pdf_url"]
+
 
         if check_pdf_exists(pdf_url):
             logging.info(f"[load_pdf] PDF {pdf_url} already exists, skipping download and loading")
@@ -61,49 +55,47 @@ def load_pdf():
 
         logging.info(f"[load_pdf] Loading PDF from URL: {pdf_url}")
         pdf_name = download_pdf(pdf_url)
+        analytics.identify(user_id=pdf_name)
         load_file(pdf_name)
         logging.info(f"[load_pdf] PDF loaded from URL: {pdf_url}")
-        posthog.capture(user_id, 'pdf_loaded', {'pdf_url': pdf_url})  # Log event with PostHog
+        analytics.track(user_id=pdf_url, event="pdf_loaded")  # Log event with June
         return Response(response=json.dumps({"status": "success"}), status=200)
     
     except (InvalidUrlError, PdfNotFoundError) as e:
         logging.error(f"[load_pdf] Error occurred: {e}")
-        posthog.capture(user_id, 'pdf_load_error', {'pdf_url': pdf_url, 'error': str(e)})  # Log event with PostHog
+        analytics.track(user_id=pdf_url, event="pdf_load_error", properties={"error": str(e)})  # Log event with June
         return Response(response=json.dumps({"error": str(e)}), status=400)
     except (PdfFetchError, PdfInvalidError) as e:
         logging.error(f"[load_pdf] PdfFetchError occurred: {e}")
-        posthog.capture(user_id, 'pdf_load_error', {'pdf_url': pdf_url, 'error': str(e)})  # Log event with PostHog
+        analytics.track(user_id=pdf_url, event="pdf_load_error", properties={"error": str(e)})  # Log event with June
         return Response(response=json.dumps({"error": "An error occurred. {e}"}), status=500)
     except Exception as e:
         logging.error(f"[load_pdf] Error occurred: {e}")
-        posthog.capture(user_id, 'pdf_load_error', {'pdf_url': pdf_url, 'error': str(e)})  # Log event with PostHog
+        analytics.track(user_id=pdf_url, event="pdf_load_error", properties={"error": str(e)})  # Log event with June
         return Response(response=json.dumps({"error": f"An unexpected error occurred. Error: {e}"}), status=500)
 
 
 @app.route("/pdf/<pdf_name>/query", methods=['POST'])
 def query_pdf(pdf_name):
-    if 'user_id' not in session:
-        session['user_id'] = str(uuid.uuid4())
-    user_id = session['user_id']
-
     try:
         data = request.get_json(force=True)
         query = data["query"]
+        analytics.identify(user_id=pdf_name, traits={"query": query})
         logging.info(f"[query_pdf] Querying PDF {pdf_name} with query: {query}")
         results = query_file(pdf_name, query)
         logging.info(f"[query_pdf] Query results for PDF {pdf_name}: {results}")
         logging.info(f"[query_pdf] Document results for PDF {pdf_name}: {results['documents'][0]}")
-        posthog.capture(user_id, 'pdf_query', {'pdf_name': pdf_name, 'query': query})  # Log event with PostHog
+        analytics.track(user_id=pdf_name, event="pdf_query", properties={"pdf_name": pdf_name, "query": query})  # Log event with June
         return Response(response=json.dumps({"results": results['documents'][0]}), status=200)
     
     except QueryNoResultsError as e:
         logging.error(f"[query_pdf] Error occurred: {e}")
-        posthog.capture(user_id, 'pdf_query_error', {'pdf_name': pdf_name, 'query': query, 'error': str(e)})  # Log event with PostHog
+        analytics.track(user_id=user_id, event="pdf_query_error", properties={"pdf_name": pdf_name, "query": query, "error": str(e)})  # Log event with June
         return Response(response=json.dumps({"error": str(e)}), status=404)
     
     except Exception as e:
         logging.error(f"[query_pdf] Error occurred: {e}")
-        posthog.capture(user_id, 'pdf_query_error', {'pdf_name': pdf_name, 'query': query, 'error': str(e)})  # Log event with PostHog
+        analytics.track(user_id=user_id, event="pdf_query_error", properties={"pdf_name": pdf_name, "query": query, "error": str(e)})  # Log event with June
         return Response(response=json.dumps({"error": "An unexpected error occurred. Error: {e}"}), status=500)
     
 @app.route("/logo.png", methods=['GET'])

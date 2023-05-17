@@ -17,7 +17,7 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import Chroma
 from langchain.document_loaders import TextLoader, PyPDFLoader
 from utils.utils import is_valid_url
-from posthog import Posthog            
+from june import analytics
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -33,8 +33,8 @@ POSTHOG_API_KEY = os.getenv("POSTHOG_API_KEY")
 # Set up OpenAI API key
 openai.api_key = OPENAI_API_KEY
 
-# Set up PostHog
-posthog = Posthog(project_api_key=POSTHOG_API_KEY, host='https://app.posthog.com')
+# Set up june
+analytics.write_key = "UVORoPXzHFVeAZ8i"
 
 # Set up ChromaDB client
 client = chromadb.Client(Settings(
@@ -108,6 +108,12 @@ def load_file(pdf_name):
 
     # Generate an array of IDs with the same length as texts, including the PDF name
     ids = [f"{pdf_name_clean_extension}_{i}" for i in range(len(texts))]
+
+    # track the number of chunks
+    analytics.track("Number of chunks", {  
+        "number_of_chunks": len(texts),
+        "pdf_name": pdf_name
+    })  
 
     # Add the ID to each metadata object and PDF_name
     for i, metadata in enumerate(metadatas):

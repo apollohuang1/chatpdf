@@ -12,6 +12,8 @@ import gdown
 import re
 import uuid
 from urllib.parse import urlparse, unquote, parse_qs
+from june import analytics
+
 
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
@@ -21,6 +23,8 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(CURRENT_DIR, '..', '..', 'data')
 USER_DATA_DIR_PDF_DOWNLOADS = os.path.join(DATA_DIR, 'user_pdf_raw')
 
+# Set up june
+analytics.write_key = "UVORoPXzHFVeAZ8i"
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -39,7 +43,7 @@ def is_valid_url(url):
 from PyPDF2 import PdfFileReader
 from io import BytesIO
 
-def is_pdf(pdf_data):
+def is_pdf(pdf_data, pdf_name):
     logging.info("Checking if the downloaded file is a valid PDF...")
     if pdf_data is None or len(pdf_data.getvalue()) == 0:
         raise PdfInvalidError("PDF data is empty or None.")
@@ -60,6 +64,12 @@ def is_pdf(pdf_data):
     num_pages = len(pdf_file.pages)
     if num_pages == 0:
         raise PdfInvalidError("PDF has no pages.")
+    
+    if num_pages > 250:
+        logging.warning("PDF has more than 250 pages. Only the first page will be used.")
+
+    # log number of pages
+    analytics.track(user_id=pdf_name, event="pdf_pages", properties={"num_pages": num_pages})  # Log event with June
 
     logging.info("PDF is valid with %d pages.", num_pages)
     return True
@@ -114,7 +124,7 @@ def download_pdf(pdf_url):
     # Download PDF logic...
     try:
         pdf_data, pdf_name = fetch_pdf(pdf_url)
-        is_pdf(pdf_data)
+        is_pdf(pdf_data, pdf_name)
     except PdfFetchError as e:
         logging.error(f"[download_pdf] PdfFetchError occurred while downloading PDF: {e}")
         raise
