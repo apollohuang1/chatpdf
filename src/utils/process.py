@@ -109,11 +109,8 @@ def load_file(pdf_name):
     # Generate an array of IDs with the same length as texts, including the PDF name
     ids = [f"{pdf_name_clean_extension}_{i}" for i in range(len(texts))]
 
-    # track the number of chunks
-    analytics.track("Number of chunks", {  
-        "number_of_chunks": len(texts),
-        "pdf_name": pdf_name
-    })  
+    # track the number of pages
+    analytics.track(user_id=pdf_name, event="pdf_pages", properties={"pages": len(pages)})
 
     # Add the ID to each metadata object and PDF_name
     for i, metadata in enumerate(metadatas):
