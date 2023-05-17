@@ -54,12 +54,24 @@ openai_ef = embedding_functions.OpenAIEmbeddingFunction(
 # Create or get the place collection
 chatpdf_collection = client.get_or_create_collection(name="chatpdf_collection", embedding_function=openai_ef)
 
+
+class InvalidUrlError(Exception):
+    """Exception raised when an invalid URL is provided."""
+
+class PdfNotFoundError(Exception):
+    """Exception raised when the PDF is not found."""
+
+class QueryNoResultsError(Exception):
+    """Exception raised when a query returns no results."""
+
+
 def check_pdf_exists(pdf_url):
     
     # Validate URL
     if not is_valid_url(pdf_url):
         logging.error(f"Invalid URL: {pdf_url}")
-        return
+        raise InvalidUrlError(f"Invalid URL: {pdf_url}")
+    
     logging.info(f"[check_pdf_exists] Checking if PDF {pdf_url} exists")
 
     pdf_name = os.path.basename(pdf_url)
@@ -74,10 +86,15 @@ def check_pdf_exists(pdf_url):
     else:
         logging.info(f"PDF {pdf_name} does not exist")
         return False
-
+    
 def load_file(pdf_name):
     logging.info(f"Loading file {pdf_name}")
     output_path = os.path.join(USER_DATA_DIR_PDF_DOWNLOADS, pdf_name)
+
+    if not os.path.exists(output_path):
+        raise FileNotFoundError(f"The file {output_path} does not exist.")
+    
+
     loader = PyPDFLoader(output_path)
     pages = loader.load()
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
@@ -131,7 +148,7 @@ def query_file(pdf_name, query):
                 results = chatpdf_collection.query(query_texts=[query], where={"PDF_name":pdf_name_fuzzed}, n_results=5)
                 if len(results['ids']) == 0:                        
                     logging.info(f"[query_file] No results found")
-                    return None
+                    raise QueryNoResultsError(f"No results found for query {query} in file {pdf_name}")
                 
     logging.info(f"Query successful")
     return results
