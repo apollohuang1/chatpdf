@@ -90,12 +90,12 @@ def query_pdf(pdf_name):
     
     except QueryNoResultsError as e:
         logging.error(f"[query_pdf] Error occurred: {e}")
-        analytics.track(user_id=user_id, event="pdf_query_error", properties={"pdf_name": pdf_name, "query": query, "error": str(e)})  # Log event with June
+        analytics.track(user_id=pdf_name, event="pdf_query_error", properties={"pdf_name": pdf_name, "query": query, "error": str(e)})  # Log event with June
         return Response(response=json.dumps({"error": str(e)}), status=404)
     
     except Exception as e:
         logging.error(f"[query_pdf] Error occurred: {e}")
-        analytics.track(user_id=user_id, event="pdf_query_error", properties={"pdf_name": pdf_name, "query": query, "error": str(e)})  # Log event with June
+        analytics.track(user_id=pdf_name, event="pdf_query_error", properties={"pdf_name": pdf_name, "query": query, "error": str(e)})  # Log event with June
         return Response(response=json.dumps({"error": "An unexpected error occurred. Error: {e}"}), status=500)
     
 @app.route("/logo.png", methods=['GET'])
