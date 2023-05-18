@@ -17,5 +17,5 @@ RUN pip install -r /app/requirements.txt
 EXPOSE 3000
 
 # Run gunicorn when the container launches
-CMD ["gunicorn", "-w", "1", "--timeout", "180", "app:app", "-b", "0.0.0.0:3000"]
+CMD ["gunicorn", "-w", "4", "--timeout", "180", "app:app", "-b", "0.0.0.0:3000"]
 
