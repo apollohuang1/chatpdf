@@ -96,7 +96,7 @@ def query_pdf(pdf_name):
     except Exception as e:
         logging.error(f"[query_pdf] Error occurred: {e}")
         analytics.track(user_id=pdf_name, event="pdf_query_error", properties={"pdf_name": pdf_name, "query": query, "error": str(e)})  # Log event with June
-        return Response(response=json.dumps({"error": "An unexpected error occurred. Error: {e}"}), status=500)
+        return Response(response=json.dumps({"error": f"An unexpected error occurred. Error: {e}"}), status=500)
     
 @app.route("/logo.png", methods=['GET'])
 def plugin_logo():
