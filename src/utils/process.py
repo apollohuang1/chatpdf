@@ -3,7 +3,6 @@ import logging
 import chromadb
 from chromadb.config import Settings
 from chromadb.utils import embedding_functions
-import openai
 import requests
 import os
 import numpy as np
@@ -12,7 +11,6 @@ from pprint import pprint
 import time
 from dotenv import load_dotenv
 from .utils import USER_DATA_DIR_PDF_DOWNLOADS
-from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import Chroma
 from langchain.document_loaders import TextLoader, PyPDFLoader
@@ -31,7 +29,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 POSTHOG_API_KEY = os.getenv("POSTHOG_API_KEY")
 
 # Set up OpenAI API key
-openai.api_key = OPENAI_API_KEY
+# openai.api_key = OPENAI_API_KEY
 
 # Set up june
 analytics.write_key = "UVORoPXzHFVeAZ8i"
@@ -46,13 +44,13 @@ client = chromadb.Client(Settings(
 ))
 
 # Set up embedding function
-openai_ef = embedding_functions.OpenAIEmbeddingFunction(
-    api_key=OPENAI_API_KEY,
-    model_name="text-embedding-ada-002"
-)
+# openai_ef = embedding_functions.OpenAIEmbeddingFunction(
+#     api_key=OPENAI_API_KEY,
+#     model_name="text-embedding-ada-002"
+# )
 
 # Create or get the place collection
-chatpdf_collection = client.get_or_create_collection(name="chatpdf_collection", embedding_function=openai_ef)
+chatpdf_collection = client.get_or_create_collection(name="chatpdf_collection")
 
 
 class InvalidUrlError(Exception):
