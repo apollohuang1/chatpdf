@@ -43,7 +43,7 @@ def is_valid_url(url):
 from PyPDF2 import PdfFileReader
 from io import BytesIO
 
-def is_pdf(pdf_data, pdf_name):
+def is_pdf(pdf_data):
     logging.info("Checking if the downloaded file is a valid PDF...")
     if pdf_data is None or len(pdf_data.getvalue()) == 0:
         raise PdfInvalidError("PDF data is empty or None.")
@@ -68,9 +68,6 @@ def is_pdf(pdf_data, pdf_name):
     if num_pages > 250:
         logging.warning("PDF has more than 250 pages. Only the first page will be used.")
 
-    # log number of pages
-    analytics.track(user_id=pdf_name, event="pdf_pages", properties={"num_pages": num_pages})  # Log event with June
-
     logging.info("PDF is valid with %d pages.", num_pages)
     return True
 
@@ -87,7 +84,7 @@ def fetch_pdf(pdf_url):
             try:
                 gdown.download(pdf_url, output_path, quiet=False, fuzzy=True)
                 with open(output_path, "rb") as f:
-                    return io.BytesIO(f.read()), unquote(urlparse(pdf_url).path.split("/")[-2])
+                    return io.BytesIO(f.read())
             except Exception as e:
                 logging.error(f"[fetch_pdf] Failed to download from Google Drive: {pdf_url}. Error: {e}")
                 raise Exception(f"Failed to download file from Google Drive. Error: <> Maybe check if the file is shared publicly?")
@@ -106,9 +103,9 @@ def fetch_pdf(pdf_url):
 
             # Hardcoded PDF name
             if 'openreview.net' in pdf_url:
-                return io.BytesIO(response.content), parse_qs(urlparse(pdf_url).query)['id'][0]
+                return io.BytesIO(response.content)
 
-            return io.BytesIO(response.content), unquote(urlparse(pdf_url).path.split("/")[-1])
+            return io.BytesIO(response.content)
         
     except RequestException as e:
         logging.error(f"An error occurred while downloading the PDF from {pdf_url}: {str(e)}")
@@ -123,8 +120,8 @@ def download_pdf(pdf_url):
 
     # Download PDF logic...
     try:
-        pdf_data, pdf_name = fetch_pdf(pdf_url)
-        is_pdf(pdf_data, pdf_name)
+        pdf_data = fetch_pdf(pdf_url)
+        is_pdf(pdf_data)
     except PdfFetchError as e:
         logging.error(f"[download_pdf] PdfFetchError occurred while downloading PDF: {e}")
         raise
@@ -134,6 +131,9 @@ def download_pdf(pdf_url):
     except Exception as e:
         logging.error(f"[download_pdf] An unknown error occurred while downloading PDF: {e}")
         raise
+
+    # Generate random PDF name
+    pdf_name = str(uuid.uuid4()) + ".pdf"
 
     output_path = os.path.join(USER_DATA_DIR_PDF_DOWNLOADS, pdf_name)
     

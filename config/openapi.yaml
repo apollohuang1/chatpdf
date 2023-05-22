@@ -1,8 +1,8 @@
 openapi: 3.0.1
 info:
-  title: ChatWithPDF Plugin
-  description: A plugin that allows users to load and query PDF documents using ChatGPT. Users must first provide a temporary PDF URL for processing. Once the PDF is loaded, users can query, analyze, or ask questions from that PDF name without needing to specify everytime.
-  version: "v1"
+  title: ChatWithPDF
+  description: A plugin that allows users to load and query PDF documents or Google Docs using ChatGPT. Users must first provide a PDF URL for processing. Once the PDF is loaded, users can query, analyze, or ask questions from that PDF name without needing to specify everytime. User must provide a PDF or Google Drive link that can be publically accessible, only documents can be loaded. The query will be able to extract relevant parts of the document to the users request. The load may take a while to process and if it does not work on the first try, try again, unless you get an error message back. User can only load documents that can be publically accessible on the internet and if they wish to upload their document they can use a service like [Upload Document](https://tmpfiles.org/).
+  version: "v2"
 servers:
   - url: https://chatwithpdf.sdan.io
 paths:
@@ -19,17 +19,10 @@ paths:
       responses:
         "200":
           description: OK
-  /pdf/{pdf_name}/query:
+  /pdf/query:
     post:
       operationId: queryPdf
       summary: Query a loaded PDF document
-      parameters:
-        - in: path
-          name: pdf_name
-          schema:
-            type: string
-          required: true
-          description: The name of the PDF document.
       requestBody:
         required: true
         content:
@@ -60,10 +53,16 @@ components:
       type: object
       required:
         - query
+        - pdf_url
       properties:
         query:
           type: string
           description: The query or question to ask based on the PDF document.
+          required: true
+        pdf_url:
+          type: string
+          format: uri
+          description: The temporary URL of the PDF document that is already loaded.
           required: true
     queryPdfResponse:
       type: object

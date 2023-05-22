@@ -85,9 +85,9 @@ def check_pdf_exists(pdf_url):
         logging.info(f"PDF {pdf_name} does not exist")
         return False
     
-def load_file(pdf_name):
-    logging.info(f"Loading file {pdf_name}")
-    output_path = os.path.join(USER_DATA_DIR_PDF_DOWNLOADS, pdf_name)
+def load_file(pdf_url, temp_pdf_name):
+    logging.info(f"Loading file {pdf_url} as {temp_pdf_name}")
+    output_path = os.path.join(USER_DATA_DIR_PDF_DOWNLOADS, temp_pdf_name)
 
     if not os.path.exists(output_path):
         raise FileNotFoundError(f"The file {output_path} does not exist.")
@@ -101,18 +101,12 @@ def load_file(pdf_name):
     texts = [doc.page_content for doc in chunks]
     metadatas = [doc.metadata for doc in chunks]
 
-    # Extract the PDF name without the extension
-    pdf_name_clean_extension = os.path.splitext(os.path.basename(pdf_name))[0]
-
     # Generate an array of IDs with the same length as texts, including the PDF name
-    ids = [f"{pdf_name_clean_extension}_{i}" for i in range(len(texts))]
-
-    # track the number of pages
-    analytics.track(user_id=pdf_name, event="pdf_pages", properties={"pages": len(pages)})
+    ids = [f"{pdf_url}_{i}" for i in range(len(texts))]
 
     # Add the ID to each metadata object and PDF_name
     for i, metadata in enumerate(metadatas):
-        metadata["PDF_name"] = pdf_name # not clean extension
+        metadata["PDF_url"] = pdf_url # not clean extension
         metadata["id"] = ids[i]
 
     logging.info(f"[load_file] texts: {texts}")
@@ -122,34 +116,12 @@ def load_file(pdf_name):
     chatpdf_collection.add(documents=texts, metadatas=metadatas, ids=ids)
     print(ids[0])
 
-    logging.info(f"File {pdf_name} loaded successfully")
+    logging.info(f"File {pdf_url} loaded successfully")
 
 def query_file(pdf_name, query):
     logging.info(f"[query_file] Querying file with query: {query}")
     logging.info(f"[query_file] pdf_name: {pdf_name}")
-    results = chatpdf_collection.query(query_texts=[query], where={"PDF_name":pdf_name}, n_results=5)
-    if len(results['ids']) == 0:
-        # check for %20 in pdf_name such as matching:
-        # THE%20ARCADES%20PROJECT.pdf
-        # THE ARCADES PROJECT
-        # THE ARCADES PROJECT.pdf
-
-        # replace %20 with space in pdf_name
-        pdf_name_20 = pdf_name.replace("%20", " ")
-        logging.info(f"[query_file] pdf_name: {pdf_name_20}")
-        results = chatpdf_collection.query(query_texts=[query], where={"PDF_name":pdf_name_20}, n_results=5)
-        if len(results['ids']) == 0: 
-            # remove .pdf from pdf_name
-            pdf_name_clean_extension = os.path.splitext(os.path.basename(pdf_name))[0]
-            logging.info(f"[query_file] pdf_name_clean_extension: {pdf_name_clean_extension}")
-            results = chatpdf_collection.query(query_texts=[query], where={"PDF_name":pdf_name_clean_extension}, n_results=5)
-            if len(results['ids']) == 0:
-                pdf_name_fuzzed = pdf_name.replace(" ", "%20")
-                logging.info(f"[query_file] pdf_name_fuzzed: {pdf_name_fuzzed}")
-                results = chatpdf_collection.query(query_texts=[query], where={"PDF_name":pdf_name_fuzzed}, n_results=5)
-                if len(results['ids']) == 0:                        
-                    logging.info(f"[query_file] No results found")
-                    raise QueryNoResultsError(f"No results found for query {query} in file {pdf_name}")
+    results = chatpdf_collection.query(query_texts=[query], where={"PDF_url":pdf_name}, n_results=5)
                 
     logging.info(f"Query successful")
     return results

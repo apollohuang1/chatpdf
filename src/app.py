@@ -8,11 +8,9 @@ import logging
 from dotenv import load_dotenv
 import json
 import uuid
-from june import analytics
+
 
 load_dotenv()
-
-analytics.write_key = "UVORoPXzHFVeAZ8i"
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -55,47 +53,50 @@ def load_pdf():
 
         logging.info(f"[load_pdf] Loading PDF from URL: {pdf_url}")
         pdf_name = download_pdf(pdf_url)
-        analytics.identify(user_id=pdf_name)
-        load_file(pdf_name)
+
+        load_file(pdf_url, pdf_name)
+
         logging.info(f"[load_pdf] PDF loaded from URL: {pdf_url}")
-        analytics.track(user_id=pdf_url, event="pdf_loaded")  # Log event with June
+
         return Response(response=json.dumps({"status": "success"}), status=200)
     
     except (InvalidUrlError, PdfNotFoundError) as e:
         logging.error(f"[load_pdf] Error occurred: {e}")
-        analytics.track(user_id=pdf_url, event="pdf_load_error", properties={"error": str(e)})  # Log event with June
+
         return Response(response=json.dumps({"error": str(e)}), status=400)
     except (PdfFetchError, PdfInvalidError) as e:
         logging.error(f"[load_pdf] PdfFetchError occurred: {e}")
-        analytics.track(user_id=pdf_url, event="pdf_load_error", properties={"error": str(e)})  # Log event with June
+
         return Response(response=json.dumps({"error": "An error occurred. {e}"}), status=500)
     except Exception as e:
         logging.error(f"[load_pdf] Error occurred: {e}")
-        analytics.track(user_id=pdf_url, event="pdf_load_error", properties={"error": str(e)})  # Log event with June
+
         return Response(response=json.dumps({"error": f"An unexpected error occurred. Error: {e}"}), status=500)
 
 
-@app.route("/pdf/<pdf_name>/query", methods=['POST'])
-def query_pdf(pdf_name):
+@app.route("/pdf/query", methods=['POST'])
+def query_pdf():
     try:
         data = request.get_json(force=True)
         query = data["query"]
-        analytics.identify(user_id=pdf_name, traits={"query": query})
-        logging.info(f"[query_pdf] Querying PDF {pdf_name} with query: {query}")
-        results = query_file(pdf_name, query)
-        logging.info(f"[query_pdf] Query results for PDF {pdf_name}: {results}")
-        logging.info(f"[query_pdf] Document results for PDF {pdf_name}: {results['documents'][0]}")
-        analytics.track(user_id=pdf_name, event="pdf_query", properties={"pdf_name": pdf_name, "query": query})  # Log event with June
+        pdf_url = data["pdf_url"]
+
+        logging.info(f"[query_pdf] Querying PDF {pdf_url} with query: {query}")
+        results = query_file(pdf_url, query)
+
+        logging.info(f"[query_pdf] Query results for PDF {pdf_url}: {results}")
+        logging.info(f"[query_pdf] Document results for PDF {pdf_url}: {results['documents'][0]}")
+
         return Response(response=json.dumps({"results": results['documents'][0]}), status=200)
     
     except QueryNoResultsError as e:
         logging.error(f"[query_pdf] Error occurred: {e}")
-        analytics.track(user_id=pdf_name, event="pdf_query_error", properties={"pdf_name": pdf_name, "query": query, "error": str(e)})  # Log event with June
+
         return Response(response=json.dumps({"error": str(e)}), status=404)
     
     except Exception as e:
         logging.error(f"[query_pdf] Error occurred: {e}")
-        analytics.track(user_id=pdf_name, event="pdf_query_error", properties={"pdf_name": pdf_name, "query": query, "error": str(e)})  # Log event with June
+
         return Response(response=json.dumps({"error": f"An unexpected error occurred. Error: {e}"}), status=500)
     
 @app.route("/logo.png", methods=['GET'])

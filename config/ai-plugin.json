@@ -2,8 +2,8 @@
   "schema_version": "v1",
   "name_for_human": "ChatWithPDF",
   "name_for_model": "chatwithpdf",
-  "description_for_human": "Plugin for asking questions, analyzing, and parsing through PDF documents by simply providing a PDF URL.",
-  "description_for_model": "A plugin that allows users to load and query PDF documents using ChatGPT. Users must first provide a temporary PDF URL for processing. Once the PDF is loaded, users can query, analyze, or ask questions from that PDF name without needing to specify everytime.",
+  "description_for_human": "Ask questions, query, and, analyze through PDF and GDrive documents by simply providing a link.",
+  "description_for_model": "A plugin that allows users to load and query PDF documents or Google Drive using ChatGPT. Users must first provide a PDF URL for processing. Once the PDF is loaded, users can query, analyze, or ask questions from that PDF name without needing to specify everytime. User must provide a PDF or Google Drive link that can be publically accessible, only documents can be loaded. The query will be able to extract relevant parts of the document to the users request. The load may take a while to process and if it does not work on the first try, try again, unless you get an error message back. User can only load documents that can be publically accessible on the internet. Google Docs must be exp and if they wish to upload their document they can use a service like [Upload Document](https://tmpfiles.org/).",
   "auth": {
     "type": "none"
   },
