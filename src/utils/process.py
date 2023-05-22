@@ -15,7 +15,6 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import Chroma
 from langchain.document_loaders import TextLoader, PyPDFLoader
 from utils.utils import is_valid_url
-from june import analytics
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -23,31 +22,19 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # Load environment variables
 load_dotenv()
 
-# API Keys
-GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-POSTHOG_API_KEY = os.getenv("POSTHOG_API_KEY")
-
-# Set up OpenAI API key
-# openai.api_key = OPENAI_API_KEY
-
-# Set up june
-analytics.write_key = "UVORoPXzHFVeAZ8i"
-
 # Set up ChromaDB client
-client = chromadb.Client(Settings(
+if os.getenv("CHROMA_DEV", "True"): 
+    client = chromadb.Client(Settings(
     anonymized_telemetry=False,
-    chroma_api_impl="rest",
-    chroma_server_host=os.getenv("CHROMA_SERVER_HOST", "localhost"),
-    chroma_server_ssl_enabled=True,
-    chroma_server_http_port=8443,
-))
-
-# Set up embedding function
-# openai_ef = embedding_functions.OpenAIEmbeddingFunction(
-#     api_key=OPENAI_API_KEY,
-#     model_name="text-embedding-ada-002"
-# )
+    ))
+else:
+    client = chromadb.Client(Settings(
+        anonymized_telemetry=False,
+        chroma_api_impl="rest",
+        chroma_server_host=os.getenv("CHROMA_SERVER_HOST", "localhost"),
+        chroma_server_ssl_enabled=False,
+        chroma_server_http_port=8000,
+    ))
 
 # Create or get the place collection
 chatpdf_collection = client.get_or_create_collection(name="chatpdf_collection")
