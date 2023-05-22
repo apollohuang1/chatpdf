@@ -23,25 +23,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 load_dotenv()
 
 # Set up ChromaDB client
-if os.getenv("CHROMA_DEV", "True"): 
-    client = chromadb.Client(Settings(
-    anonymized_telemetry=False,
-    ))
-elif os.getenv("CHROMA_QUERY", "False"):
-    client = chromadb.Client(Settings(
+client = chromadb.Client(Settings(
         anonymized_telemetry=False,
         chroma_api_impl="rest",
         chroma_server_host=os.getenv("CHROMA_SERVER_HOST", "localhost"),
         chroma_server_ssl_enabled=True,
         chroma_server_http_port=8443,
-    ))
-else:
-    client = chromadb.Client(Settings(
-        anonymized_telemetry=False,
-        chroma_api_impl="rest",
-        chroma_server_host=os.getenv("CHROMA_SERVER_HOST", "localhost"),
-        chroma_server_ssl_enabled=False,
-        chroma_server_http_port=8000,
     ))
 
 # Create or get the place collection
