@@ -27,7 +27,7 @@ if os.getenv("CHROMA_DEV", "True"):
     client = chromadb.Client(Settings(
     anonymized_telemetry=False,
     ))
-if os.getenv("CHROMA_QUERY", "True"):
+elif os.getenv("CHROMA_QUERY", "False"):
     client = chromadb.Client(Settings(
         anonymized_telemetry=False,
         chroma_api_impl="rest",
