@@ -37,6 +37,9 @@ class PdfFetchError(Exception):
 class PdfInvalidError(Exception):
     """Exception raised when the PDF is invalid."""
 
+class PdfFormatError(Exception):
+    """Exception raised when we cannot parse the PDF. Maybe the text is in an image? Currently not supported."""
+
 
 
 @app.route("/pdf/load", methods=['POST'])
@@ -60,7 +63,7 @@ def load_pdf():
 
         return Response(response=json.dumps({"status": "success"}), status=200)
     
-    except (InvalidUrlError, PdfNotFoundError) as e:
+    except (InvalidUrlError, PdfNotFoundError, PdfFormatError) as e:
         logging.error(f"[load_pdf] Error occurred: {e}")
 
         return Response(response=json.dumps({"error": str(e)}), status=400)

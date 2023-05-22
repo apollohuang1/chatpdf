@@ -44,6 +44,10 @@ class PdfNotFoundError(Exception):
 class QueryNoResultsError(Exception):
     """Exception raised when a query returns no results."""
 
+class PdfFormatError(Exception):
+    """Exception raised when we cannot parse the PDF. Maybe the text is in an image? Currently not supported."""
+
+
 
 def check_pdf_exists(pdf_url):
     
@@ -77,8 +81,13 @@ def load_file(pdf_url, temp_pdf_name):
 
     loader = PyPDFLoader(output_path)
     pages = loader.load()
+    logging.info(f"[load_file] pages: {pages}")
+    if pages[0].page_content == "":
+        logging.info(f"[load_file] pages[0].page_content: {pages[0].page_content}")
+        raise PdfFormatError("PDF has no text content that can be parsed. Maybe the text is in an image? Currently not supported.")
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
     chunks = text_splitter.split_documents(pages)
+    logging.info(f"[load_file] chunks: {chunks[0]}")
 
     texts = [doc.page_content for doc in chunks]
     metadatas = [doc.metadata for doc in chunks]

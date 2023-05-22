@@ -30,7 +30,7 @@ class PdfFetchError(Exception):
 
 class PdfInvalidError(Exception):
     """Exception raised when the PDF is invalid."""
-
+    
 class NotAPdfError(Exception):
     pass
 
