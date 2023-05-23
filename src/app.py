@@ -8,6 +8,7 @@ import logging
 from dotenv import load_dotenv
 import json
 import uuid
+from threading import Thread
 
 
 load_dotenv()
@@ -41,7 +42,6 @@ class PdfFormatError(Exception):
     """Exception raised when we cannot parse the PDF. Maybe the text is in an image? Currently not supported."""
 
 
-
 @app.route("/pdf/load", methods=['POST'])
 def load_pdf():
     try:
@@ -49,32 +49,32 @@ def load_pdf():
         logging.info(f"[load_pdf] Data: {data}")
         pdf_url = data["pdf_url"]
 
-
         if check_pdf_exists(pdf_url):
             logging.info(f"[load_pdf] PDF {pdf_url} already exists, skipping download and loading")
             return Response(response=json.dumps({"status": "success"}), status=200)
+        else :
+            logging.info(f"[load_pdf] PDF {pdf_url} does not exist, downloading and loading")
+            Thread(target=download_and_load_pdf, args=(pdf_url,)).start()
+            return Response(response=json.dumps({"status": "loading"}), status=202) 
 
-        logging.info(f"[load_pdf] Loading PDF from URL: {pdf_url}")
-        pdf_name = download_pdf(pdf_url)
-
-        load_file(pdf_url, pdf_name)
-
-        logging.info(f"[load_pdf] PDF loaded from URL: {pdf_url}")
-
-        return Response(response=json.dumps({"status": "success"}), status=200)
-    
     except (InvalidUrlError, PdfNotFoundError, PdfFormatError) as e:
         logging.error(f"[load_pdf] Error occurred: {e}")
-
         return Response(response=json.dumps({"error": str(e)}), status=400)
     except (PdfFetchError, PdfInvalidError) as e:
         logging.error(f"[load_pdf] PdfFetchError occurred: {e}")
-
         return Response(response=json.dumps({"error": "An error occurred. {e}"}), status=500)
     except Exception as e:
         logging.error(f"[load_pdf] Error occurred: {e}")
-
         return Response(response=json.dumps({"error": f"An unexpected error occurred. Error: {e}"}), status=500)
+
+def download_and_load_pdf(pdf_url):
+    try:
+        logging.info(f"[load_pdf] Loading PDF from URL: {pdf_url}")
+        pdf_name = download_pdf(pdf_url)
+        load_file(pdf_url, pdf_name)
+        logging.info(f"[load_pdf] PDF loaded from URL: {pdf_url}")
+    except Exception as e:
+        logging.error(f"[load_pdf] Error occurred in download_and_load_pdf: {e}")
 
 
 @app.route("/pdf/query", methods=['POST'])

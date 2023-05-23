@@ -58,17 +58,16 @@ def check_pdf_exists(pdf_url):
     
     logging.info(f"[check_pdf_exists] Checking if PDF {pdf_url} exists")
 
-    pdf_name = os.path.basename(pdf_url)
 
-    results = chatpdf_collection.get(where={"PDF_name":pdf_name})
+    results = chatpdf_collection.get(where={"PDF_url":pdf_url})
     logging.info(f"[check_pdf_exists] Results: {results}")
     ids = results['ids']
     logging.info(f"[check_pdf_exists] IDs length: {len(ids)}") 
     if len(ids) > 0:
-        logging.info(f"PDF {pdf_name} exists, skipping download and loading")
+        logging.info(f"PDF {pdf_url} exists, skipping download and loading")
         return True
     else:
-        logging.info(f"PDF {pdf_name} does not exist")
+        logging.info(f"PDF {pdf_url} does not exist")
         return False
     
 def load_file(pdf_url, temp_pdf_name):
@@ -109,10 +108,10 @@ def load_file(pdf_url, temp_pdf_name):
 
     logging.info(f"File {pdf_url} loaded successfully")
 
-def query_file(pdf_name, query):
+def query_file(pdf_url, query):
     logging.info(f"[query_file] Querying file with query: {query}")
-    logging.info(f"[query_file] pdf_name: {pdf_name}")
-    results = chatpdf_collection.query(query_texts=[query], where={"PDF_url":pdf_name}, n_results=5)
+    logging.info(f"[query_file] pdf_url: {pdf_url}")
+    results = chatpdf_collection.query(query_texts=[query], where={"PDF_url":pdf_url}, n_results=5)
                 
     logging.info(f"Query successful")
     return results
