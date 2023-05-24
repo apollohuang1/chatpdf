@@ -55,7 +55,7 @@ def load_pdf():
         else :
             logging.info(f"[load_pdf] PDF {pdf_url} does not exist, downloading and loading")
             Thread(target=download_and_load_pdf, args=(pdf_url,)).start()
-            return Response(response=json.dumps({"status": "loading"}), status=202) 
+            return Response(response=json.dumps({"status": "regenerate response"}), status=202) 
 
     except (InvalidUrlError, PdfNotFoundError, PdfFormatError) as e:
         logging.error(f"[load_pdf] Error occurred: {e}")
