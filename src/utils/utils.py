@@ -141,6 +141,12 @@ def download_pdf(pdf_url):
     # Print success message
     logging.info(f"PDF downloaded from {pdf_url} and saved to {output_path} saved as {pdf_name}")
 
-    # Return PDF name
-    return pdf_name
+    # Find file size and return time to load in seconds. Typically the load is 1mb per second
+    file_size = os.path.getsize(output_path)
+    time_to_load = file_size / 1000000
 
+    logging.info(f"PDF size: {file_size} bytes. Time to load: {time_to_load} seconds")
+    
+
+    # Return PDF name
+    return pdf_name, time_to_load

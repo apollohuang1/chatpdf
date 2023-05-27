@@ -54,8 +54,27 @@ def load_pdf():
             return Response(response=json.dumps({"status": "success"}), status=200)
         else :
             logging.info(f"[load_pdf] PDF {pdf_url} does not exist, downloading and loading")
-            Thread(target=download_and_load_pdf, args=(pdf_url,)).start()
-            return Response(response=json.dumps({"status": "regenerate response"}), status=202) 
+            
+            logging.info(f"[load_pdf] Downloading PDF from URL: {pdf_url}")
+            pdf_name, time_to_load = download_pdf(pdf_url)
+
+            logging.info(f"[load_pdf] Downloaded PDF {pdf_url} as {pdf_name} in {time_to_load} seconds")
+
+            # if less than 20 seconds, load the file
+            if time_to_load < 20:
+                logging.info(f"[load_pdf] Loading PDF {pdf_url} as {pdf_name}")
+                load_file(pdf_url, pdf_name)
+                return Response(response=json.dumps({"status": "success"}), status=200)
+            
+            # otherwise, load the file in a separate thread
+            # thread load_file so that we can return a response immediately
+            logging.info(f"[load_pdf] Loading PDF {pdf_url} as {pdf_name}")
+
+            Thread(target=load_file, args=(pdf_url, pdf_name)).start()
+
+            # resopnse with the number of seconds it will take to load the file and the name of the file and saying "The PDF is being loaded in the background and will be available in {time_to_load} seconds."
+            return Response(response=json.dumps({"status": "success", "message": f"PDF has been successfully loaded and will be available in {time_to_load} seconds to process.", "time_to_load": time_to_load, "filename": pdf_name}), status=200)
+            
 
     except (InvalidUrlError, PdfNotFoundError, PdfFormatError) as e:
         logging.error(f"[load_pdf] Error occurred: {e}")
@@ -66,16 +85,6 @@ def load_pdf():
     except Exception as e:
         logging.error(f"[load_pdf] Error occurred: {e}")
         return Response(response=json.dumps({"error": f"An unexpected error occurred. Error: {e}"}), status=500)
-
-def download_and_load_pdf(pdf_url):
-    try:
-        logging.info(f"[load_pdf] Loading PDF from URL: {pdf_url}")
-        pdf_name = download_pdf(pdf_url)
-        load_file(pdf_url, pdf_name)
-        logging.info(f"[load_pdf] PDF loaded from URL: {pdf_url}")
-    except Exception as e:
-        logging.error(f"[load_pdf] Error occurred in download_and_load_pdf: {e}")
-
 
 @app.route("/pdf/query", methods=['POST'])
 def query_pdf():
