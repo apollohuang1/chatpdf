@@ -12,3 +12,4 @@ urllib3==1.26.5
 PyPDF2==2.10.4
 gdown==4.7.1
 modal_client==0.49.2437
+tiktoken===0.4.0
