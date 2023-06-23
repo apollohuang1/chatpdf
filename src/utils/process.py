@@ -13,6 +13,7 @@ from langchain.document_loaders import TextLoader, PyPDFLoader
 from utils.utils import is_valid_url
 import pickle
 import modal
+import tiktoken
 
 stub = modal.Stub("sheets")
 
@@ -21,6 +22,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # Load environment variables
 load_dotenv()
+
+token_count = 0
 
 class InvalidUrlError(Exception):
     """Exception raised when an invalid URL is provided."""
@@ -34,6 +37,13 @@ class QueryNoResultsError(Exception):
 class PdfFormatError(Exception):
     """Exception raised when we cannot parse the PDF. Maybe the text is in an image? Currently not supported."""
 
+
+def num_tokens_from_texts(texts) -> int:
+    # texts is an array of strings
+    pdfblob = "".join(texts)
+    encoding = tiktoken.get_encoding("cl100k_base")
+    num_tokens = len(encoding.encode(pdfblob))
+    return num_tokens
 
 
 def check_pdf_exists(pdf_url):
@@ -54,6 +64,7 @@ def check_pdf_exists(pdf_url):
         return False
     
 def load_file(pdf_url, temp_pdf_name):
+    global token_count  # Declare the variable as global
     logging.info(f"Loading file {pdf_url} as {temp_pdf_name}")
     output_path = os.path.join(USER_DATA_DIR_PDF_DOWNLOADS, temp_pdf_name)
 
@@ -70,7 +81,9 @@ def load_file(pdf_url, temp_pdf_name):
     text_splitter = CharacterTextSplitter.from_tiktoken_encoder(
     chunk_size=512, chunk_overlap=0
     )
+
     chunks = text_splitter.split_documents(pages)
+    
     logging.info(f"[load_file] chunks: {chunks[0]}")
 
     texts = [doc.page_content for doc in chunks]
@@ -83,6 +96,10 @@ def load_file(pdf_url, temp_pdf_name):
     for i, metadata in enumerate(metadatas):
         metadata["PDF_url"] = pdf_url # not clean extension
         metadata["id"] = ids[i]
+
+    
+    token_count+=num_tokens_from_texts(texts)
+    logging.info(f"[load_file] token_count: {token_count}")
 
     logging.info(f"[load_file] texts: {texts}")
     logging.info(f"[load_file] metadatas: {metadatas}")
