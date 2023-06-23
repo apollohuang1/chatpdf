@@ -5,9 +5,7 @@ langchain==0.0.209
 modal_client==0.49.2437
 numpy==1.23.2
 pandas==1.4.4
-pypdf==3.11.0
 PyPDF2==2.10.4
-PyPDF2==3.0.1
 python-dotenv==1.0.0
 Requests==2.31.0
 validators==0.20.0
