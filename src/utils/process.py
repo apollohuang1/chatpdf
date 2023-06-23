@@ -74,7 +74,7 @@ def load_file(pdf_url, temp_pdf_name):
 
     loader = PyPDFLoader(output_path)
     pages = loader.load()
-    logging.info(f"[load_file] pages: {pages}")
+    # logging.info(f"[load_file] pages: {pages}")
     if pages[0].page_content == "":
         logging.info(f"[load_file] pages[0].page_content: {pages[0].page_content}")
         raise PdfFormatError("PDF has no text content that can be parsed. Maybe the text is in an image? Currently not supported.")
@@ -101,9 +101,9 @@ def load_file(pdf_url, temp_pdf_name):
     token_count+=num_tokens_from_texts(texts)
     logging.info(f"[load_file] token_count: {token_count}")
 
-    logging.info(f"[load_file] texts: {texts}")
-    logging.info(f"[load_file] metadatas: {metadatas}")
-    logging.info(f"[load_file] ids: {ids}")
+    # logging.info(f"[load_file] texts: {texts}")
+    # logging.info(f"[load_file] metadatas: {metadatas}")
+    # logging.info(f"[load_file] ids: {ids}")
 
     # Ensure the directory exists
     directory = os.path.dirname(os.path.join(USER_DATA_DIR_PDF_EMBEDDING, f"{pdf_url}.pkl"))
