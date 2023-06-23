@@ -1,8 +1,5 @@
 import json
 import logging
-import chromadb
-from chromadb.config import Settings
-from chromadb.utils import embedding_functions
 import requests
 import os
 import numpy as np
@@ -10,30 +7,20 @@ import pandas as pd
 from pprint import pprint
 import time
 from dotenv import load_dotenv
-from .utils import USER_DATA_DIR_PDF_DOWNLOADS
+from .utils import USER_DATA_DIR_PDF_DOWNLOADS, USER_DATA_DIR_PDF_EMBEDDING
 from langchain.text_splitter import CharacterTextSplitter
-from langchain.vectorstores import Chroma
 from langchain.document_loaders import TextLoader, PyPDFLoader
 from utils.utils import is_valid_url
+import pickle
+import modal
+
+stub = modal.Stub("sheets")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Load environment variables
 load_dotenv()
-
-# Set up ChromaDB client
-client = chromadb.Client(Settings(
-        anonymized_telemetry=False,
-        chroma_api_impl="rest",
-        chroma_server_host=os.getenv("CHROMA_SERVER_HOST", "localhost"),
-        chroma_server_ssl_enabled=True,
-        chroma_server_http_port=8443,
-    ))
-
-# Create or get the place collection
-chatpdf_collection = client.get_or_create_collection(name="chatpdf_collection")
-
 
 class InvalidUrlError(Exception):
     """Exception raised when an invalid URL is provided."""
@@ -58,16 +45,12 @@ def check_pdf_exists(pdf_url):
     
     logging.info(f"[check_pdf_exists] Checking if PDF {pdf_url} exists")
 
-
-    results = chatpdf_collection.get(where={"PDF_url":pdf_url})
-    logging.info(f"[check_pdf_exists] Results: {results}")
-    ids = results['ids']
-    logging.info(f"[check_pdf_exists] IDs length: {len(ids)}") 
-    if len(ids) > 0:
-        logging.info(f"PDF {pdf_url} exists, skipping download and loading")
+    # Check if PDF exists as a file
+    if os.path.exists(os.path.join(USER_DATA_DIR_PDF_DOWNLOADS, pdf_url)):
+        logging.info(f"[check_pdf_exists] PDF {pdf_url} exists as a file")
         return True
     else:
-        logging.info(f"PDF {pdf_url} does not exist")
+        logging.info(f"[check_pdf_exists] PDF {pdf_url} does not exist as a file")
         return False
     
 def load_file(pdf_url, temp_pdf_name):
@@ -84,7 +67,9 @@ def load_file(pdf_url, temp_pdf_name):
     if pages[0].page_content == "":
         logging.info(f"[load_file] pages[0].page_content: {pages[0].page_content}")
         raise PdfFormatError("PDF has no text content that can be parsed. Maybe the text is in an image? Currently not supported.")
-    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+    text_splitter = CharacterTextSplitter.from_tiktoken_encoder(
+    chunk_size=512, chunk_overlap=0
+    )
     chunks = text_splitter.split_documents(pages)
     logging.info(f"[load_file] chunks: {chunks[0]}")
 
@@ -103,7 +88,14 @@ def load_file(pdf_url, temp_pdf_name):
     logging.info(f"[load_file] metadatas: {metadatas}")
     logging.info(f"[load_file] ids: {ids}")
 
-    chatpdf_collection.add(documents=texts, metadatas=metadatas, ids=ids)
+    # Ensure the directory exists
+    directory = os.path.dirname(os.path.join(USER_DATA_DIR_PDF_EMBEDDING, f"{pdf_url}.pkl"))
+    os.makedirs(directory, exist_ok=True)
+
+    # Picke just the texts
+    with open(os.path.join(USER_DATA_DIR_PDF_EMBEDDING, f"{pdf_url}.pkl"), "wb") as f:
+        pickle.dump(texts, f)
+
     print(ids[0])
 
     logging.info(f"File {pdf_url} loaded successfully")
@@ -111,7 +103,17 @@ def load_file(pdf_url, temp_pdf_name):
 def query_file(pdf_url, query):
     logging.info(f"[query_file] Querying file with query: {query}")
     logging.info(f"[query_file] pdf_url: {pdf_url}")
-    results = chatpdf_collection.query(query_texts=[query], where={"PDF_url":pdf_url}, n_results=5)
+
+    # Load the texts
+    with open(os.path.join(USER_DATA_DIR_PDF_EMBEDDING, f"{pdf_url}.pkl"), "rb") as f:
+        texts = pickle.load(f)
+
+    logging.info(f"[query_file] texts: {texts}")
+    
+    rembedSimilarity = modal.Function.lookup("sheets", "SentenceEmbeddings.similarity")
+    results = rembedSimilarity.call(query,texts)
+
+    logging.info(f"[query_file] results: {results}")
                 
     logging.info(f"Query successful")
     return results

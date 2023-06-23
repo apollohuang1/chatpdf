@@ -60,8 +60,8 @@ def load_pdf():
 
             logging.info(f"[load_pdf] Downloaded PDF {pdf_url} as {pdf_name} in {time_to_load} seconds")
 
-            # if less than 20 seconds, load the file
-            if time_to_load < 20:
+            # if less than 60 seconds, load the file
+            if time_to_load < 60:
                 logging.info(f"[load_pdf] Loading PDF {pdf_url} as {pdf_name}")
                 load_file(pdf_url, pdf_name)
                 return Response(response=json.dumps({"status": "success"}), status=200)
@@ -97,9 +97,8 @@ def query_pdf():
         results = query_file(pdf_url, query)
 
         logging.info(f"[query_pdf] Query results for PDF {pdf_url}: {results}")
-        logging.info(f"[query_pdf] Document results for PDF {pdf_url}: {results['documents'][0]}")
 
-        return Response(response=json.dumps({"results": results['documents'][0]}), status=200)
+        return Response(response=json.dumps({"results": results}), status=200)
     
     except QueryNoResultsError as e:
         logging.error(f"[query_pdf] Error occurred: {e}")

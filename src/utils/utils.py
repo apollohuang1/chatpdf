@@ -21,6 +21,7 @@ from pypdf.errors import PdfReadError
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(CURRENT_DIR, '..', '..', 'data')
 USER_DATA_DIR_PDF_DOWNLOADS = os.path.join(DATA_DIR, 'user_pdf_raw')
+USER_DATA_DIR_PDF_EMBEDDING = os.path.join(DATA_DIR, 'user_pdf_embeddings')
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
